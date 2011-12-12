@@ -13,10 +13,127 @@ import usb.control
 
 # Python imports
 import sys
+import time
 
 # PIC information
 # idVendor=0x04d8
 # idProduct=0x7531
+
+def show_dev_info(dev):
+    """ show common information for a given device """
+    if dev is None:
+        raise ValueError('- Invalid device')
+    show_dev_descriptor(dev)
+    return 0
+
+def show_dev_descriptor(dev):
+    """ show common information for a given device descriptor """
+    if dev is None:
+        raise ValueError('- Invalid device descriptor')
+
+    sys.stdout.write('Device Descriptor:\n')
+    sys.stdout.write('  bLength                 %s\n' % dev.bLength)
+    sys.stdout.write('  bDescriptorType         %s\n' % dev.bDescriptorType)
+    sys.stdout.write('  bcdUSB                  %s\n' % dev.bcdUSB)
+    sys.stdout.write('  bDeviceClass            %s (Defined at Interface level)\n' % dev.bDeviceClass)
+    sys.stdout.write('  bDeviceSubClass         %s\n' % dev.bDeviceSubClass)
+    sys.stdout.write('  bDeviceProtocol         %s\n' % dev.bDeviceProtocol)
+    sys.stdout.write('  bMaxPacketSize0         %s\n' % dev.bMaxPacketSize0)
+    sys.stdout.write('  idVendor                %s\n' % dev.idVendor.__hex__())
+    sys.stdout.write('  idProduct               %s\n' % dev.idProduct.__hex__())
+    sys.stdout.write('  bcdDevice               %s\n' % dev.bcdDevice)
+    sys.stdout.write('  iManufacturer           %s\n' % dev.iManufacturer)
+    sys.stdout.write('  iProduct                %s\n' % dev.iProduct)
+    sys.stdout.write('  iSerial                 %s\n' % dev.iSerialNumber)
+    sys.stdout.write('  bNumConfigurations      %s\n' % dev.bNumConfigurations)
+
+    cfg = dev.get_active_configuration()
+    show_cfg_descriptor(cfg)
+    return 0
+
+def show_cfg_descriptor(cfg):
+    """ show common information for a given configuration """
+    if cfg is None:
+        raise ValueError('- Invalid configuration descriptor')
+
+    # configurator descriptor info (2spaces)
+    sys.stdout.write('  Configuration Descriptor:\n')
+    sys.stdout.write('    bLength                 %s\n' % cfg.bLength)
+    sys.stdout.write('    bDescriptorType         %s\n' % cfg.bDescriptorType)
+    sys.stdout.write('    wTotalLength            %s\n' % cfg.wTotalLength)
+    sys.stdout.write('    bNumInterfaces          %s\n' % cfg.bNumInterfaces)
+    sys.stdout.write('    bConfigurationValue     %s\n' % cfg.bConfigurationValue)
+    sys.stdout.write('    iConfiguration          %s\n' % cfg.iConfiguration)
+    sys.stdout.write('    bmAttributes            %s\n' % cfg.bmAttributes.__hex__())
+    sys.stdout.write('      (Bus Powered)         Not Implemented yet\n')
+    sys.stdout.write('      Remote Wakeup         Not Implemented yet\n')
+    sys.stdout.write('    MaxPower                %dmA\n' % (2*int(cfg.bMaxPower)))
+
+    # retrieve all interfaces for this configuration
+    interfaces = usb.util.find_descriptor(cfg,find_all=True)
+    if interfaces is None:
+        raise ValueError('- No valid interface found for this configuration: %s' % cfg.bConfigurationValue)
+    
+    for intf in interfaces:
+        show_intf_descriptor(intf)
+
+    return 0
+
+def show_intf_descriptor(intf):
+    """ show common information for a given interface """
+    if intf is None:
+        raise ValueError('- Invalid interface descriptor')
+
+    # interface descriptor info (4spaces)
+    sys.stdout.write('    Interface Descriptor:\n')
+    sys.stdout.write('      bLength                 %s\n' % intf.bLength)
+    sys.stdout.write('      bDescriptorType         %s\n' % intf.bDescriptorType)
+    sys.stdout.write('      bInterfaceNumber        %s\n' % intf.bInterfaceNumber)
+    sys.stdout.write('      bAlternateSetting       %s\n' % intf.bAlternateSetting)
+    sys.stdout.write('      bNumEndpoints           %s\n' % intf.bNumEndpoints)
+    sys.stdout.write('      bInterfaceClass         %s\n' % intf.bInterfaceClass)
+    sys.stdout.write('      bInterfaceSubClass      %s\n' % intf.bInterfaceSubClass)
+    sys.stdout.write('      bInterfaceProtocol      %s\n' % intf.bInterfaceProtocol)
+    sys.stdout.write('      iInterface              %s\n' % intf.iInterface)
+    
+    # retrieve all endpoints for this interface
+    endpoints = usb.util.find_descriptor(intf,find_all=True)
+    if endpoints is None:
+        raise ValueError('- No valid endpoints found for interface: %s' % intf.bInterfaceNumber)
+    
+    for ep in endpoints:
+        show_endp_descriptor(ep)
+
+    return 0
+
+def show_endp_descriptor(ep):
+    """ show common information for a given endpoint """
+
+    if ep is None:
+        raise ValueError('- Invalid Endpoint')
+
+    # Endpoint descriptor info (6spaces)
+    sys.stdout.write('      Endpoint Descriptor:\n')
+    #bLength(8 spaces)
+    sys.stdout.write('        bLength              %s\n' % ep.bLength)
+    #bDescriptorType
+    sys.stdout.write('        bDescriptorType      %s\n' % ep.bDescriptorType)
+    #bEndpointAddress
+    sys.stdout.write('        bEndpointAddress     %s\n' % ep.bEndpointAddress.__hex__())
+    #bmAttributes
+    sys.stdout.write('        bmAttributes         %s\n' % ep.bmAttributes)
+    ##Transfer Type(10)
+    sys.stdout.write('          Transfer Type      Not implemented yet\n')
+    ##Synch Type
+    sys.stdout.write('          Synch Type         Not implemented yet\n')
+    ##Usage Type
+    sys.stdout.write('          Usage Type         Not implemented yet\n')
+    #wMaxPacketSize
+    sys.stdout.write('        wMaxPacketSize       %s\n' % ep.wMaxPacketSize.__hex__())
+    #bInterval
+    sys.stdout.write('        bInterval            %s\n' % ep.bInterval)
+
+    return 0
 
 
 if __name__ == "__main__":
@@ -32,6 +149,12 @@ if __name__ == "__main__":
     sys.stdout.write('- USB uC device found!\n- Bus 00%s Device 00%s: %s %s\n' %
                      (str(dev.bus), str(dev.address),
                       usb.util.get_string(dev,8,1), usb.util.get_string(dev,15,2)))
+
+    # if we only want to know the status of the PIC
+    if sys.argv[1] == "--status":
+        print("Status of the device:")
+        show_dev_info(dev)
+        sys.exit(0)
 
     # set the configurations
     sys.stdout.write('- Configuring the device: ')
@@ -51,16 +174,62 @@ if __name__ == "__main__":
     assert ep is not None
     sys.stdout.write('OK\n')
 
-    # read/write
-    ep = usb.util.find_descriptor(intf, bEndpointAddress=0x2)
     sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep.bEndpointAddress.__hex__())
-    while 1:
-        data = '0xff'
-        ep.write(data,timeout=2000)
-        data = '0x00'
-        ep.write(data,timeout=2000)
-        data = '0xff'
-        ep.write(data,timeout=2000)
-        data = '0x00'
-        ep.write(data,timeout=2000)
 
+    # read/write
+    ep2 = usb.util.find_descriptor(intf, bEndpointAddress=0x2)
+    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep2.bEndpointAddress.__hex__())
+
+    ep1 = usb.util.find_descriptor(intf, bEndpointAddress=0x81)
+    sys.stdout.write('Reading from the IN endpoint(%s):\n' % ep1.bEndpointAddress.__hex__())
+
+    print("\n===================\n")
+
+    c = 0
+    while c == 0:
+        data = str(0x00) # RESET order
+
+        data = str(0x01) # PRINT order
+        aux = ep2.write(data,timeout=2000)
+        print("Writed %s bytes to EP2 after PRINT op!" % aux)
+        aux = 0
+
+####        usb_clear_halt(udev,write2)
+
+        data = str(0xff) # data to be PRINT by the PIC
+        aux = ep.write(data,timeout=2000)
+        print("Writed %s bytes to EP1 after PRINT op!" % aux)
+        aux = 0
+
+####        usb_clear_halt(udev,write)
+
+        aux = ep1.read(1,timeout=2000)
+        print("Read 1 bytes from EP1 after PRINT op!")
+        print("  - Data read: %s" % aux)
+        aux = 0
+        
+        data = str(0x00) # RESET order
+        aux = ep2.write(data,timeout=2000)
+        print("Writed %s bytes to EP2 after RESET op!" % aux)
+        aux = 0
+        
+        c = 1
+
+# 
+# The interface responded.
+# EP1
+# ---
+# 	WRITE:	01h
+# 	READ:	81h
+# 	SIZEIN:	7
+# 	SIZEOUT:	7
+# 	E_PTS:	1
+# 
+# EP2
+# ---
+# 	WRITE:	02h
+# 	READ:	82h
+# 	SIZEIN:	7
+# 	SIZEOUT:	7
+# Device Initialized
+# 
