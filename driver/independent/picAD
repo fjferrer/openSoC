@@ -150,6 +150,7 @@ if __name__ == "__main__":
                      (str(dev.bus), str(dev.address),
                       usb.util.get_string(dev,8,1), usb.util.get_string(dev,15,2)))
 
+
     # if we only want to know the status of the PIC
     if sys.argv[1] == "--status":
         print("Status of the device:")
@@ -174,20 +175,42 @@ if __name__ == "__main__":
     assert ep is not None
     sys.stdout.write('OK\n')
 
-    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep.bEndpointAddress.__hex__())
+#    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep.bEndpointAddress.__hex__())
 
     # read/write
-    ep2 = usb.util.find_descriptor(intf, bEndpointAddress=0x2)
-    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep2.bEndpointAddress.__hex__())
+    ep2in = usb.util.find_descriptor(intf, bEndpointAddress=0x82)
+#    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep2.bEndpointAddress.__hex__())
 
-    ep1 = usb.util.find_descriptor(intf, bEndpointAddress=0x81)
-    sys.stdout.write('Reading from the IN endpoint(%s):\n' % ep1.bEndpointAddress.__hex__())
+    ep2out = usb.util.find_descriptor(intf, bEndpointAddress=0x02)
+
+    ep1in = usb.util.find_descriptor(intf, bEndpointAddress=0x81)
+#    sys.stdout.write('Reading from the IN endpoint(%s):\n' % ep1.bEndpointAddress.__hex__())
+
+    ep1out = usb.util.find_descriptor(intf, bEndpointAddress=0x01)
 
     print("\n===================\n")
+
+
+    data = 'hola p5epe' # Datos
+    aux = ep1out.write(data,timeout=1000)
+    
+    aux = 0
+    aux = ep1in.read(10,timeout=15000)
+    print("Read 1 bytes from EP1 after PRINT op!")
+    print("  - Data read: %s" % aux.tostring())
+    aux = 0
+
+
+    sys.exit(1)
+#    data = str(0x01) # PRINT order
+#    aux = ep2out.write(data,timeout=2000)
 
     c = 0
     while c == 0:
         data = str(0x00) # RESET order
+        aux = ep1.write(data,timeout=2000)
+        print("Writed %s bytes to EP2 after PRINT op!" % aux)
+        aux = 0
 
         data = str(0x01) # PRINT order
         aux = ep2.write(data,timeout=2000)
@@ -196,7 +219,7 @@ if __name__ == "__main__":
 
 ####        usb_clear_halt(udev,write2)
 
-        data = str(0xff) # data to be PRINT by the PIC
+        data = str(0xf45f) # data to be PRINT by the PIC
         aux = ep.write(data,timeout=2000)
         print("Writed %s bytes to EP1 after PRINT op!" % aux)
         aux = 0

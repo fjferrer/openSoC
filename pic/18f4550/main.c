@@ -67,7 +67,7 @@
 #define	ROLLER	0
 
 /** 
- * NOTA: 
+ * NOTE: 
  *     There are problems related with GET_FEATURE 
  *     when working under 48 MHZ
  *
@@ -122,7 +122,7 @@ void UserInit(void)
   TRISB = 0x00;              /* Set all pins of PORTB as output      */
   TRISD = 0xc;               /* Set pins 4,3 as in and 1,2 as out    */
   /* TODO SET THE TRISE CONFIGURATION ACCORDING TO THE AD REQs       */
-  TRISE = 0x;                /* Set pins of AD for ouput/analog      */
+  //TRISE = 0x00;                /* Set pins of AD for ouput/analog      */
   INTCON = 0;                /* Tunr off all interrupts              */
   INTCON2 = 0;               /* Tunr off all interrupts              */
   PORTB = 0x00;              /* Start with motors turned off         */
@@ -339,7 +339,26 @@ void print_line(byte * p, byte * e)
  * This is the main function that process all usb transactions, it decides what
  * to do according to the instructions recived by the host.
  **/
+
 static void USB(void)
+{
+	byte rxCnt;
+	rxCnt = BulkOut(1, rxBuffer, INPUT_BYTES);
+	if (rxCnt == 0)
+	  return;
+
+	print_line(rxBuffer, echoVector);
+
+	do {
+	  rxCnt = BulkIn(1, echoVector, INPUT_BYTES);
+	} while (rxCnt == 0);
+
+	while (ep1Bi.Stat & UOWN)
+	  ProcessUSBTransactions();
+}
+
+
+static void USBc(void)
 {
 	byte rxCnt;
 	/** 
@@ -350,6 +369,7 @@ static void USB(void)
 	 * Find out if an output request has arrived to EP2
          * *** HOST --> DEVICE  ***
 	 **/
+
 	rxCnt = BulkOut(2, &instruction, 1);
 	if (rxCnt == 0)
 		return;
