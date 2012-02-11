@@ -1,0 +1,9 @@
+This project aims to create a firmware for some PIC/ARM devices that support
+USB transfers, the corresponding Userspace driver/library to interact with the
+device and an example tool to read some information from the A/D module of the
+device.
+
+ad_tool/	folder contains the tool to use the A/D module of the device
+arm/		folder contains the firmware for some ARM devices
+driver/		folder contains the library/driver to use the USB stack in the device
+pic/		folder contains the firmware for some PIC devices
