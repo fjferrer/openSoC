@@ -100,6 +100,8 @@ code char at 0x30000D CONFIG7H = 0xff;	/* No boot table protection      */
 volatile byte txBuffer[INPUT_BYTES];
 volatile byte rxBuffer[OUTPUT_BYTES];
 volatile byte echoVector[INPUT_BYTES];
+//unsigned int adval; //ADC Value
+char adval; //ADC Value
 
 /**
  * Buffers for Enpoint 2 (Instruction bus)
@@ -117,12 +119,25 @@ void UserInit(void)
   /* TODO CHANGE FOR A DEFAULT VALUE AND ADDIT INTO A ADCONVERSION FUNCTION
      BECAUSE THIS IS THE REGISTER TO SET THE CHANNEL FOR CONVERSION  */
   ADCON0 = 0xFF;             /* Set RA4 as output                    */
+
   /* TODO CHANGE ADCON1 TO SET ANALOG INPUT FOR PORTE/AN5,6,7 PINS   */
-  ADCON1 = 0x0F;             /* Set all I/O as digital               */
+  ADCON1 = 0x00;             /* Set all I/O as digital               */
+
   TRISB = 0x00;              /* Set all pins of PORTB as output      */
   TRISD = 0xc;               /* Set pins 4,3 as in and 1,2 as out    */
-  /* TODO SET THE TRISE CONFIGURATION ACCORDING TO THE AD REQs       */
-  //TRISE = 0x00;                /* Set pins of AD for ouput/analog      */
+
+  /* SET THE TRISE CONFIGURATION ACCORDING TO THE AD REQs            */
+  TRISEbits.TRISE0 = 1;      /* Set pins of AD for ouput/analog      */
+  TRISEbits.TRISE1 = 1;      /* Set pins of AD for ouput/analog      */
+  TRISEbits.TRISE2 = 1;      /* Set pins of AD for ouput/analog      */
+
+  /* Set the reference voltages as VDD and VSS                       */
+  ADCON1bits.VCFG0=0;
+  ADCON1bits.VCFG1=0;
+
+  /* Configure Justification, Acquisition time and conversion clock  */
+  ADCON2=0b10001010;
+
   INTCON = 0;                /* Tunr off all interrupts              */
   INTCON2 = 0;               /* Tunr off all interrupts              */
   PORTB = 0x00;              /* Start with motors turned off         */
@@ -326,7 +341,8 @@ void print_line(byte * p, byte * e)
 	reset_car();
 	width_b = NUMLINES - 1;
 	while (width_b) {
-		*e = print_byte(p);
+	  //		*e = print_byte(p);
+		*e = 'a';
 		p++;
 		e++;
 		width_b--;
@@ -342,16 +358,22 @@ void print_line(byte * p, byte * e)
 
 static void USB(void)
 {
-	byte rxCnt;
+  byte rxCnt, tmpBuff;
 	rxCnt = BulkOut(1, rxBuffer, INPUT_BYTES);
 	if (rxCnt == 0)
 	  return;
 
+	/* funcionando con este bloque
 	print_line(rxBuffer, echoVector);
 
 	do {
 	  rxCnt = BulkIn(1, echoVector, INPUT_BYTES);
-	} while (rxCnt == 0);
+	} while (rxCnt == 0);	*/
+
+	tmpBuff = (byte) adval;
+	do {
+	  rxCnt = BulkIn(1, &tmpBuff, 1);
+	} while (rxCnt == 0); 
 
 	while (ep1Bi.Stat & UOWN)
 	  ProcessUSBTransactions();
@@ -424,6 +446,27 @@ void ProcessIO(void)
 	USB();
 }
 
+
+//Function to Read given ADC channel (0-13)
+unsigned int ADCRead(unsigned char ch)
+{
+  if(ch>13) return 0;  //Invalid Channel
+
+  ADCON0=0x00;
+
+  ADCON0=(ch<<2);   //Select ADC Channel
+
+  ADCON0bits.ADON=1;  //switch on the adc module
+
+  ADCON0bits.GO=1;//Start conversion
+
+  while(ADCON0bits.GO); //wait for the conversion to finish
+
+  ADCON0bits.ADON=0;  //switch off adc
+
+  return ADRESH;
+}
+
 /**
  * main(void) - Main entry point of the firmware
  *
@@ -449,6 +492,11 @@ void main(void)
 
 	//motors_off();
 
+	//Initialize the ADC Module
+	//ADCInit();
+
+	adval = 'a';
+ 
 	while (1) {
 		/** 
                  * Make sure the USB is available 
@@ -460,9 +508,15 @@ void main(void)
                  **/
 		if (UCFGbits.UTEYE != 1)
 			ProcessUSBTransactions();
-		/**
+
+       		/**
                  * Now we can make our work
                  **/
 		ProcessIO();
+
+		delay(2000);
+		adval=ADCRead(7);   //Read Channel 7
+		delay(1000);
+
 	}
 }

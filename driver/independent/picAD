@@ -191,8 +191,8 @@ if __name__ == "__main__":
     print("\n===================\n")
 
 
-    data = 'hola p5epe' # Datos
-    aux = ep1out.write(data,timeout=1000)
+    data = 'datosa' # Datos
+    aux = ep1out.write(data,timeout=2000)
     
     aux = 0
     aux = ep1in.read(10,timeout=15000)

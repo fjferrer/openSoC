@@ -14,7 +14,7 @@ class plt(object):
     def __init__(self,probes,measure="voltage",enablegrid=True):
         """ Init function """
 
-        
+    
 
         # Set interactive mode on
         setp(interactive=True)
