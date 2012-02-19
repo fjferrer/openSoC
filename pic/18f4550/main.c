@@ -114,6 +114,19 @@ void delay(byte ms)
     for (i = 0; i < 200; i++);	/* Experimental value   */
 }
 
+void status()
+{
+  for (i = 0; i < 5; i++);
+  {
+    PORTDbits.RD0 = 1;
+    PORTDbits.RD1 = 1;
+    delay(500);
+    PORTDbits.RD0 = 0;
+    PORTDbits.RD1 = 0;    
+  }
+  return 0;
+}
+
 /**
  * check_bit() -        Checks the status of a bit in a byte
  * @ byte_in:           The byte to check
@@ -258,6 +271,8 @@ void main(void)
   currentConfiguration = 0x00;
   
   adval = 'b';
+
+  status();
   
   while (1) {
     /** 
