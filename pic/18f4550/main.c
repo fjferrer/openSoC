@@ -116,15 +116,15 @@ void delay(byte ms)
 
 void status()
 {
-  for (i = 0; i < 5; i++);
+  byte i;
+  for (i = 0; i < 15; i++);
   {
-    PORTDbits.RD0 = 1;
-    PORTDbits.RD1 = 1;
+    PORTB = 0xff;
+    PORTD = 0xff;
     delay(500);
-    PORTDbits.RD0 = 0;
-    PORTDbits.RD1 = 0;    
+    PORTB = 0x00;
+    PORTD = 0x00;
   }
-  return 0;
 }
 
 /**
