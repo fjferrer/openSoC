@@ -175,16 +175,7 @@ if __name__ == "__main__":
     assert ep is not None
     sys.stdout.write('OK\n')
 
-#    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep.bEndpointAddress.__hex__())
-
-    # read/write
-    ep2in = usb.util.find_descriptor(intf, bEndpointAddress=0x82)
-#    sys.stdout.write('Writing to the OUT endpoint(%s):\n' % ep2.bEndpointAddress.__hex__())
-
-    ep2out = usb.util.find_descriptor(intf, bEndpointAddress=0x02)
-
     ep1in = usb.util.find_descriptor(intf, bEndpointAddress=0x81)
-#    sys.stdout.write('Reading from the IN endpoint(%s):\n' % ep1.bEndpointAddress.__hex__())
 
     ep1out = usb.util.find_descriptor(intf, bEndpointAddress=0x01)
 
@@ -195,64 +186,18 @@ if __name__ == "__main__":
     aux = ep1out.write(data,timeout=2000)
     
     aux = 0
-    aux = ep1in.read(10,timeout=15000)
+    aux = ep1in.read(10,timeout=1500)
     print("Read 1 bytes from EP1 after PRINT op!")
     print("  - Data read: %s" % aux.tostring())
+    print("  - RAW DATA: %s" % aux.tolist())
     aux = 0
 
+    for a in xrange(1,100):
+        data = 'datosa' # Datos
+        aux1 = ep1out.write(data,timeout=2000)
+        aux = 0
+        aux = ep1in.read(10,timeout=1500)
+        print("- %s" % aux.tolist())
+        time.sleep(1)
 
     sys.exit(1)
-#    data = str(0x01) # PRINT order
-#    aux = ep2out.write(data,timeout=2000)
-
-    c = 0
-    while c == 0:
-        data = str(0x00) # RESET order
-        aux = ep1.write(data,timeout=2000)
-        print("Writed %s bytes to EP2 after PRINT op!" % aux)
-        aux = 0
-
-        data = str(0x01) # PRINT order
-        aux = ep2.write(data,timeout=2000)
-        print("Writed %s bytes to EP2 after PRINT op!" % aux)
-        aux = 0
-
-####        usb_clear_halt(udev,write2)
-
-        data = str(0xf45f) # data to be PRINT by the PIC
-        aux = ep.write(data,timeout=2000)
-        print("Writed %s bytes to EP1 after PRINT op!" % aux)
-        aux = 0
-
-####        usb_clear_halt(udev,write)
-
-        aux = ep1.read(1,timeout=2000)
-        print("Read 1 bytes from EP1 after PRINT op!")
-        print("  - Data read: %s" % aux)
-        aux = 0
-        
-        data = str(0x00) # RESET order
-        aux = ep2.write(data,timeout=2000)
-        print("Writed %s bytes to EP2 after RESET op!" % aux)
-        aux = 0
-        
-        c = 1
-
-# 
-# The interface responded.
-# EP1
-# ---
-# 	WRITE:	01h
-# 	READ:	81h
-# 	SIZEIN:	7
-# 	SIZEOUT:	7
-# 	E_PTS:	1
-# 
-# EP2
-# ---
-# 	WRITE:	02h
-# 	READ:	82h
-# 	SIZEIN:	7
-# 	SIZEOUT:	7
-# Device Initialized
-# 
