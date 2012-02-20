@@ -60,7 +60,7 @@ code char at 0x30000D CONFIG7H = 0xff;	/* No boot table protection      */
  * Buffers for Enpoint 1 (Data bus)
  **/
 volatile byte rxBuffer[OUTPUT_BYTES];
-volatile byte echoVector[INPUT_BYTES];
+volatile byte txBuffer[INPUT_BYTES];
 //unsigned int adval; //ADC Value
 char adval; //ADC Value
 
@@ -88,8 +88,12 @@ void UserInit(void)
   TRISEbits.TRISE2 = 1;      /* Set pins of AD for ouput/analog      */
   
   /* Set the reference voltages as VDD and VSS                       */
-  ADCON1bits.VCFG0=0;
-  ADCON1bits.VCFG1=0;
+  //ADCON1bits.VCFG0=0;
+  //ADCON1bits.VCFG1=0;
+
+  /* Set the reference voltages as Vref+ and Vref-                   */
+  ADCON1bits.VCFG0=1;
+  ADCON1bits.VCFG1=1;
   
   /* Configure Justification, Acquisition time and conversion clock  */
   ADCON2=0b10001010;
@@ -114,17 +118,12 @@ void delay(byte ms)
     for (i = 0; i < 200; i++);	/* Experimental value   */
 }
 
-void status()
+void status(void)
 {
-  byte i;
-  for (i = 0; i < 15; i++);
-  {
-    PORTB = 0xff;
-    PORTD = 0xff;
-    delay(500);
-    PORTB = 0x00;
-    PORTD = 0x00;
-  }
+  PORTDbits.RD1 = 1;
+  delay(100);
+  PORTDbits.RD1 = 0;
+  delay(100);
 }
 
 /**
@@ -196,25 +195,30 @@ void print_line(byte * p, byte * e)
 
 static void USB(void)
 {
-  byte rxCnt, tmpBuff;
+  byte rxCnt;
+  //byte tmpBuff;
   rxCnt = BulkOut(1, rxBuffer, INPUT_BYTES);
   if (rxCnt == 0)
     return;
-  
-  /* funcionando con este bloque
-     print_line(rxBuffer, echoVector);
-     
-     do {
-     rxCnt = BulkIn(1, echoVector, INPUT_BYTES);
-     } while (rxCnt == 0);	*/
-  
-  tmpBuff = (byte) adval;
+
+  ADCON0bits.ADON=1;  //switch on the adc module
+  ADCON0bits.GO=1;//Start conversion
+  while(ADCON0bits.GO); //wait for the conversion to finish
+  ADCON0bits.ADON=0;  //switch off adc
+
+  //tmpBuff = (byte) ADRESH;
+  txBuffer[0] = (byte) ADRESH;
+  txBuffer[1] = (byte) ADRESL;
+
   do {
-    rxCnt = BulkIn(1, &tmpBuff, 1);
+    //rxCnt = BulkIn(1, &tmpBuff, 1);
+    rxCnt = BulkIn(1, txBuffer, 2);
   } while (rxCnt == 0); 
   
   while (ep1Bi.Stat & UOWN)
     ProcessUSBTransactions();
+
+  status();
 }
 
 
@@ -272,7 +276,11 @@ void main(void)
   
   adval = 'b';
 
-  status();
+  ADCON0=0x00;
+  ADCON0bits.CHS0=0;   //Select ADC Channel
+  ADCON0bits.CHS1=1;   //Select ADC Channel
+  ADCON0bits.CHS2=1;   //Select ADC Channel
+  ADCON0bits.CHS3=0;   //Select ADC Channel
   
   while (1) {
     /** 
@@ -293,6 +301,8 @@ void main(void)
     
     //adval=ADCRead(7);   //Read Channel 7
     //delay(100);
+
+    //status();
     
   }
 }
